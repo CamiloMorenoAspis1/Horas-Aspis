@@ -1,4 +1,4 @@
-import { Body, Controller, Post, HttpException, HttpStatus} from '@nestjs/common';
+import { Body, Controller, Post, HttpException, HttpStatus, Get} from '@nestjs/common';
 import { User } from 'src/models/user.model';
 import { AuthService } from './auth.service';
 
@@ -6,7 +6,7 @@ import { AuthService } from './auth.service';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post('login')
+  @Get('login')
   public login(@Body() body: Pick<User, 'email' | 'password'>) {
     return this.authService.login(body.email, body.password);
     //return '[TEST]: login'    
@@ -17,5 +17,8 @@ export class AuthController {
     return this.authService.register(body);
     //return '[TEST]: register'
   }
-
 }
+function express() {
+  throw new Error('Function not implemented.');
+}
+

@@ -22,17 +22,19 @@ import { ResponseDto } from 'src/app.DTO.responseDto';
 import { request } from 'http';
 import { RequestDto } from 'src/app.DTO.requestDto';
 import { Http2ServerResponse } from 'http2';
+import { ResponseLoginDto } from 'src/app.DTO.responseLoginDto';
+import { Result } from 'src/models/resultLogin.model';
+
 
 @Injectable()
 export class AuthService {
-  constructor(private firebaseService: FirebaseService) {}
+  constructor(private firebaseService: FirebaseService) {}  
 
-  public async login(
-    email: string,
-    password: string,
-  ): Promise<Omit<User, 'password'>> {
+  public async login(email: string, password: string): Promise<ResponseLoginDto>{//Omit<User, 'password'>> {
+    console.log('Iniciando consulta()...'); // adicion 
     try {
-      const userCredential: UserCredential = await signInWithEmailAndPassword(
+        const responseLoginDto: ResponseLoginDto = new ResponseLoginDto ("", new Result());
+        const userCredential: UserCredential = await signInWithEmailAndPassword(
         this.firebaseService.auth,
         email,
         password,
@@ -40,20 +42,21 @@ export class AuthService {
 
       if (userCredential) {
         const id: string = userCredential.user.uid;
-        const docRef: DocumentReference = doc(
-          this.firebaseService.usersCollection,
-          id,
-        );
+        const docRef: DocumentReference = doc(this.firebaseService.usersCollection, id);
 
         const snapshot: DocumentSnapshot<DocumentData> = await getDoc(docRef);
-        const loggedUser: User = {
-          ...snapshot.data(),
-          id: snapshot.id,
-        } as User;
-        console.log('consulta');
-        delete loggedUser.password;
-        return loggedUser;
-      }
+        const loggedUser: User = {...snapshot.data(), id: snapshot.id, } as User;
+        
+        console.log('consulta', HttpStatus.OK);
+        //delete loggedUser.password;
+        //_______________adicion__________
+        responseLoginDto.status = "ok";
+        responseLoginDto.result.token = loggedUser.id;
+        //______________fin de adicion____________
+        //return loggedUser; //linea comentariada
+   
+      } 
+      return responseLoginDto;//adicion   
     } catch (error: unknown) {
       const firebaseAuthError = error as AuthError;
 
@@ -82,10 +85,7 @@ export class AuthService {
 
       if (userCredential) {
         const id: string = userCredential.user.uid;
-        const docRef: DocumentReference = doc(
-          this.firebaseService.usersCollection,
-          id,
-        );
+        const docRef: DocumentReference = doc(this.firebaseService.usersCollection, id);
         await setDoc(docRef, body);       
         console.log('Usuario Registrado'); // adicion    
         
