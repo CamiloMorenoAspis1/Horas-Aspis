@@ -1,11 +1,11 @@
 import { Result } from "./models/resultLogin.model";
 
 export class ResponseLoginDto { //es para el login
-    status: string;
+    statusCode: number;
     result: Result;
 
-    constructor(status: string, result:Result){
-        this.status=status;
+    constructor(statusCode: number, result:Result){
+        this.statusCode=statusCode;
         this.result=result;
     }
 }
