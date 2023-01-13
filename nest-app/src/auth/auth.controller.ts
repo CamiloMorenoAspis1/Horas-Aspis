@@ -1,4 +1,5 @@
 import { Body, Controller, Post} from '@nestjs/common';
+import { Delete } from '@nestjs/common/decorators/http/request-mapping.decorator';
 import { User } from 'src/models/user.model';
 import { AuthService } from './auth.service';
 
@@ -19,7 +20,7 @@ export class AuthController {
     //return '[TEST]: register'
   }
 //--------------------------------
-  @Post('delete')
+  @Delete('delete')
   public delete(@Body() body: Omit<User, 'id'>) {
     return this.authService.delete(body.email, body.password);
     //return '[TEST]: delete'

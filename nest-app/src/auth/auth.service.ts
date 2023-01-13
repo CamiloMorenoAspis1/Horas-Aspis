@@ -4,6 +4,7 @@ import { User } from 'src/models/user.model';
 import {
   AuthError,
   createUserWithEmailAndPassword,
+  deleteUser,
   signInWithEmailAndPassword,
   UserCredential,
 } from 'firebase/auth';
@@ -17,10 +18,13 @@ import {
   DocumentData,
   Firestore,
   collection,
+  getFirestore,
 } from 'firebase/firestore';
 import { ResponseDto } from 'src/app.DTO.responseDto';
 import { ResponseLoginDto } from 'src/app.DTO.responseLoginDto';
 import { Result } from 'src/models/resultLogin.model';
+import { Resulta } from 'src/models/resultaDelete.model';
+import { ResponseDeleteDto } from 'src/app.DTO.responseDeleteDto';
 
 //--------------------------------------------------------------------------------------------------
 @Injectable()
@@ -64,6 +68,10 @@ export class AuthService {
         throw new HttpException('Email not found.', HttpStatus.NOT_FOUND);
       }
 
+      if (firebaseAuthError.code === 'invalid-argument') {
+        throw new HttpException('usuario no existe', HttpStatus.NOT_ACCEPTABLE);
+      }
+   
     }
   }
 //--------------------------------------------------------------------------------------------------
@@ -92,13 +100,12 @@ export class AuthService {
       
     } catch (error: unknown) {
       const firebaseAuthError = error as AuthError;
-      const responseDto: ResponseDto = new ResponseDto;
-
+ 
       console.log('[FIREBASE AUTH ERROR CODE]: ',firebaseAuthError.code);
 
       if (firebaseAuthError.code === 'auth/email-already-in-use') {
         console.log('email ya existe');
-        throw new HttpException('Email ya exixte', HttpStatus.CONFLICT);
+        throw new HttpException('Email ya existe', HttpStatus.CONFLICT);
       }
 
       if (firebaseAuthError.code === 'auth/invalid-email') {
@@ -111,10 +118,10 @@ export class AuthService {
     }
   }
 //---------------------------------------------------------------------------------------------------
-public async delete(email: string, password: string): Promise<ResponseLoginDto>{//Omit<User, 'password'>> {
+public async delete(email: string, password: string): Promise<ResponseDeleteDto>{//Omit<User, 'password'>> {
   console.log('Iniciando borrado()...'); // adicion 
   try {
-      const responseLoginDto: ResponseLoginDto = new ResponseLoginDto (HttpStatus.PROCESSING, new Result());
+      const responseDeleteDto: ResponseDeleteDto = new ResponseDeleteDto (HttpStatus.PROCESSING, new Result());
       const userCredential: UserCredential = await signInWithEmailAndPassword(
       this.firebaseService.auth,
       email,
@@ -123,18 +130,22 @@ public async delete(email: string, password: string): Promise<ResponseLoginDto>{
 
     if (userCredential) {
       const id: string = userCredential.user.uid;
-      const docRef: DocumentReference = doc(this.firebaseService.usersCollection, id);
+      const  db = getFirestore();
+      //const docRef: DocumentReference = doc(this.firebaseService.usersCollection, id);
+      const docRef: DocumentReference = doc(db, "/users", id);
       const snapshot: DocumentSnapshot<DocumentData> = await getDoc(docRef);
       const loggedUser: User = {...snapshot.data(), id: snapshot.id, } as User;
         
-      console.log('Proceso de borrado', HttpStatus.PROCESSING, " ");
+      console.log('Proceso de borrado', HttpStatus.PROCESSING);
        //_______________adicion__________
-      responseLoginDto.statusCode = HttpStatus.PROCESSING;
-      responseLoginDto.result.token = loggedUser.id;
-      //deleteDoc(loggedUser.id).delete();
+      responseDeleteDto.statusCode = HttpStatus.PROCESSING;
+      responseDeleteDto.resulta.token = "Usuario Borrado "+ loggedUser;
+      delete(this.firebaseService.usersCollection);
+      deleteDoc(docRef);
+      console.log('borrado completo');
       //______________fin de adicion____________    
     } 
-    return responseLoginDto;  
+    return responseDeleteDto;  
   } catch (error: unknown) {
     const firebaseAuthError = error as AuthError;
 
@@ -145,12 +156,14 @@ public async delete(email: string, password: string): Promise<ResponseLoginDto>{
     }
 
     if (firebaseAuthError.code === 'auth/user-not-found' || firebaseAuthError.code === 'auth/invalid-email') {
-      throw new HttpException('Email not found.', HttpStatus.NOT_FOUND);
+      throw new HttpException('Email de usuario no existe.', HttpStatus.NOT_FOUND);
+    }
+
+    if (firebaseAuthError.code === 'invalid-argument') {
+      throw new HttpException('usuario no existe', HttpStatus.NOT_ACCEPTABLE);
     }
 
   }
-
-
 }
 //--------------------------------------------------------------------------------------------------*/
 }
